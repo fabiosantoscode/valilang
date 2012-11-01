@@ -2,7 +2,13 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <script type="text/x-valilang" src="example.val"></script>
+    <script type="text/x-valilang">
+        {"fields":["name","email","recipients"],
+        "fieldValidation":{"name":["required","min-10","max-50","split","listmax-2"]
+        ,"email":["required","min-3","max-60","email"]
+        ,"recipients":["required","split-,;","listmin-1","email"]
+        }}
+    </script>
     <script type="text/javascript" src="valilang.js"></script>
 </head>
 <body>
@@ -10,7 +16,7 @@
         <p>
             <input name="name" type="text" placeholder="Name" />
         </p><p>
-            <input name="address" type="text" placeholder="Enter your e-mail" />
+            <input name="email" type="text" placeholder="Enter your e-mail" />
         </p><p>
             <textarea name="recipients" type="text" placeholder="Enter email recipients" /></textarea>
         </p><p>

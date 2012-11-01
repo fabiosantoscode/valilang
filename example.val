@@ -15,7 +15,7 @@
         },
         {
             "field" : "recipients",
-            "rules" : ["required", "split-,; ", "listmin-1" "email"]
+            "rules" : ["required", "split-,; ", "listmin-1", "email"]
         }
     ]
 }
