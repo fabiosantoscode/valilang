@@ -9,30 +9,39 @@
  * http://sam.zoy.org/wtfpl/COPYING for more details. */
 (function (window, document) {
     "use strict";
-    var rValilang = /valilang/,
+    var rValilangMimeType = /valilang/,
         rWhitespace = /^\s+$/,
         rRuleWithArguments = /^([a-zA-Z_0-9]+)-(.*?)$/,
         rRuleWithoutArguments = /^([a-zA-Z_0-9]+)$/,
-        valilang,
-        defaultRules;
-    defaultRules = {
-        email: function () {
-            function validator(email) {
-                var email_re = /^\S+@\S+\.\S+$/;
-                return email_re.test(email) ? email : null;
-            }
-            return validator;
-        }
-    };
+        valilang;
     valilang = window.valilang = {
-        rules: {},
+        // default validation options. Overridden in valilang scripts.
+        options: {
+            binding: 'keyup'
+        },
+        // Initial package of rules.
+        rules: {
+            required: function () {
+                function required_validator(value) {
+                    return value || null;
+                }
+                return required_validator;
+            },
+            email: function () {
+                var email_re = /^\S+@\S+\.\S+$/;
+                function email_validator(email) {
+                    return email_re.test(email) ? email : null;
+                }
+                return email_validator;
+            }
+        },
         start: function () {
             var scripts = document.getElementsByTagName("script"),
                 script,
                 i;
             for (i = 0; i < scripts.length; i++) {
                 script = scripts[i];
-                if (rValilang.test(script.type)) {
+                if (rValilangMimeType.test(script.type)) {
                     if (script.src) {
                         this.addRemote(script.src);
                     } else if (script.innerHTML && !rWhitespace.test(script.innerHTML)) {
@@ -56,10 +65,7 @@
                 filedata,
                 rule_strings,
                 i,
-                j,
-                regexResult,
-                rule,
-                args;
+                j;
             try {
                 filedata = JSON.parse(json);
             } catch (e) {
@@ -74,24 +80,11 @@
                 if (filedata.fieldValidation[fields[i]] !== undefined) {
                     rule_strings = filedata.fieldValidation[fields[i]];
                     for (j = 0; j < rule_strings.length; j++) {
-                        regexResult = rRuleWithArguments.exec(rule_strings[j]);
-                        if (regexResult) {
-                            rule = regexResult[1];
-                            args = regexResult[2];
-                        } else {
-                            regexResult = rRuleWithoutArguments.exec(rule_strings[j]);
-                            if (regexResult) {
-                                rule = regexResult[1];
-                                args = undefined;
-                            } else {
-                                this.parseError(script_location, 'Invalid rule: ' + rule_strings[j]);
-                            }
-                        }
-                        func = this.getRule(rule);
+                        func = this.ruleStringToRule(rule_strings[j]);
                         if (func !== undefined) {
-                            field_rules.push(func(args));
+                            field_rules.push(func);
                         } else {
-                            console.warn('valilang: Rule "' + rule + '" not found');
+                            console.warn('valilang: Rule "' + rule_strings[j] + '" not found');
                         }
                     }
                     this.addHandlers(fields[i], field_rules);
@@ -99,19 +92,46 @@
                 }
             }
         },
-        getRule: function (rule_name) {
-            return defaultRules[rule_name];
+        ruleStringToRule: function (rule_string) {
+            var regexResult, rule, args, ruleFunc;
+            regexResult = rRuleWithArguments.exec(rule_string);
+            if (regexResult) {
+                rule = regexResult[1];
+                args = regexResult[2];
+            } else {
+                regexResult = rRuleWithoutArguments.exec(rule_string);
+                if (regexResult) {
+                    rule = regexResult[1];
+                    args = undefined;
+                } else {
+                    this.parseError(undefined, 'Invalid rule: ' + rule_string);
+                }
+            }
+            ruleFunc = this.rules[rule];
+            return ruleFunc === undefined ? undefined : ruleFunc(args);
+        },
+        addRule: function (rule_name, rule_func) {
+            this.rules[rule_name] = rule_func;
+        },
+        setInvalidityCallback: function (callback) {
+            this.invalidityCallback = callback;
+        },
+        isInvalid: function (elm) {
+            this.invalidityCallback(elm, elm.tagName === 'FORM');
         },
         addHandlers: function (elmName, rules) {
             var elm = document.getElementsByName(elmName)[0],
                 i,
+                that = this,
                 handlerFunc = function () {
                     for (i = 0; i < rules.length; i++) {
-                        console.log(rules[i]);
+                        if (!rules[i](elm.value)) {
+                            that.isInvalid(elm);
+                        }
                     }
                 };
             if (elm === undefined) {
-                console.warn('field named "' + elmName + '" not found');
+                console.warn('field named "' + elmName + '" not defined');
             } else {
                 if (elm.addEventListener) {
                     elm.addEventListener('keyup', handlerFunc, false);
@@ -121,7 +141,7 @@
             }
         }
     };
-    function readyHandler (e) {
+    function readyHandler() {
         if (document.readyState === 'complete') {
             valilang.start();
         }

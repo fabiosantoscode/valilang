@@ -1,4 +1,5 @@
 {
+    "binding":"keyup",
     "fields":[
         "name",
         "email",
