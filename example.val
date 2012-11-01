@@ -1,0 +1,21 @@
+{
+    "fields":[
+        "name",
+        "email",
+        "recipients"
+    ],
+    "fieldValidation":[
+        {
+            "field" : "name",
+            "rules" : ["required", "min-10", "max-50", "split", "listmax-2"]
+        },
+        {
+            "field" : "email",
+            "rules" : ["required", "min-3", "max-60", "email"]
+        },
+        {
+            "field" : "recipients",
+            "rules" : ["required", "split-,; ", "listmin-1" "email"]
+        }
+    ]
+}
