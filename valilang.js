@@ -14,6 +14,7 @@
         rRuleWithArguments = /^([a-zA-Z_0-9]+)-(.*?)$/,
         rRuleWithoutArguments = /^([a-zA-Z_0-9]+)$/,
         valilang;
+    // Valilang object, assigned to the global namespace for API access.
     valilang = window.valilang = {
         // default validation options. Overridden in valilang scripts.
         options: {
@@ -156,11 +157,28 @@
         addRule: function (rule_name, rule_func) {
             this.rules[rule_name] = rule_func;
         },
+        invalidityCallback: function (element) {
+            element.className.replace(/\bvl-valid\b/g, '');
+            element.className += ' vl-invalid';
+        },
+        validityCallback: function (element) {
+            element.className.replace(/\bvl-invalid\b/g, '');
+            element.className += ' vl-valid';
+        },
         setInvalidityCallback: function (callback) {
             this.invalidityCallback = callback;
         },
+        setValidityCallback: function (callback) {
+            this.validityCallback = callback;
+        },
+        setDoneParsingCallback: function (callback) {
+            this.doneParsingCallback = callback;
+        },
         isInvalid: function (elm) {
             this.invalidityCallback(elm, elm.tagName === 'FORM');
+        },
+        isValid: function (elm) {
+            this.validityCallback(elm, elm.tagName === 'FORM');
         },
         bind: function (elmName, rules) {
             var elm = document.getElementsByName(elmName)[0],
@@ -170,6 +188,8 @@
                     for (i = 0; i < rules.length; i++) {
                         if (!rules[i](elm.value)) {
                             that.isInvalid(elm);
+                        } else {
+                            that.isValid(elm);
                         }
                     }
                 };
@@ -181,6 +201,11 @@
                 } else if (elm.attachEvent) {
                     elm.attachEvent('on' + this.options.binding, handlerFunc);
                 }
+            }
+        },
+        doneParsing: function () {
+            if (this.doneParsingCallback) {
+                this.doneParsingCallback();
             }
         }
     };
