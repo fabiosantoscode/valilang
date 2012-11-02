@@ -33,6 +33,39 @@
                     return email_re.test(email) ? email : null;
                 }
                 return email_validator;
+            },
+            split: function (byCharacters) {
+                var i, splitter;
+                byCharacters = byCharacters || ' \n';
+                function makeSplitRegexp(splitBy) {
+                    var out = '[';
+                    // The slash (\) can be used to escape any regex character.
+                    // Let's be paranoid. Escape everything!
+                    for (i = 0; i < splitBy.length; i++) {
+                        out += '^\\' + splitBy[i];
+                    }
+                    return new RegExp(out + ']');
+                }
+                function splitByRegexp(str, regexp) {//TODO unused
+                    var results = [],
+                        current = '',
+                        cutstr = str;
+                    while (cutstr) {
+                        current = regexp.exec(cutstr);
+                        if (current) {
+                            cutstr = cutstr.slice(cutstr.indexOf(current) + current.length);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                splitter = makeSplitRegexp(byCharacters);
+                return function (value, nextRules) {
+                    console.log('splitting:');
+                    console.log(value);
+                    console.log('next rules:');
+                    console.log(nextRules);
+                };
             }
         },
         start: function () {
@@ -58,6 +91,16 @@
         addRemote: function (src) {
             console.error(src, 'Remote loading not yet implemented.');
         },
+        parseOptions: function (json_data) {
+            var option;
+            for (option in this.options) {
+                if (this.options.hasOwnProperty(option)) {
+                    if (json_data[option] !== undefined) {
+                        this.options[option] = json_data[option];
+                    }
+                }
+            }
+        },
         parse: function (json, script_location) {
             var fields = [],
                 field_rules = [],
@@ -72,7 +115,7 @@
                 this.parseError(script_location, e);
             }
             fields = filedata.fields;
-            if (fields === undefined) {
+            if (!fields) {
                 this.parseError(script_location, '"fields" list expected.');
                 return;
             }
@@ -87,7 +130,7 @@
                             console.warn('valilang: Rule "' + rule_strings[j] + '" not found');
                         }
                     }
-                    this.addHandlers(fields[i], field_rules);
+                    this.bind(fields[i], field_rules);
                     field_rules = [];
                 }
             }
@@ -119,7 +162,7 @@
         isInvalid: function (elm) {
             this.invalidityCallback(elm, elm.tagName === 'FORM');
         },
-        addHandlers: function (elmName, rules) {
+        bind: function (elmName, rules) {
             var elm = document.getElementsByName(elmName)[0],
                 i,
                 that = this,
@@ -134,9 +177,9 @@
                 console.warn('field named "' + elmName + '" not defined');
             } else {
                 if (elm.addEventListener) {
-                    elm.addEventListener('keyup', handlerFunc, false);
+                    elm.addEventListener(this.options.binding, handlerFunc, false);
                 } else if (elm.attachEvent) {
-                    elm.attachEvent('onkeyup', handlerFunc);
+                    elm.attachEvent('on' + this.options.binding, handlerFunc);
                 }
             }
         }
