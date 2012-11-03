@@ -10,9 +10,8 @@
 (function (window, document) {
     "use strict";
     var rValilangMimeType = /valilang/,
-        rWhitespace = /^\s+$/,
-        rRuleWithArguments = /^([a-zA-Z_0-9]+)-(.*?)$/,
-        rRuleWithoutArguments = /^([a-zA-Z_0-9]+)$/,
+        rWhitespace = /^\s*?$/,
+        rValilangRule = /^(\w+)\b-?(.*?)$/,
         valilang;
     // Valilang object, assigned to the global namespace for API access.
     valilang = window.valilang = {
@@ -69,29 +68,15 @@
                     // The slash (\) can be used to escape special characters.
                     for (i = 0; i < splitBy.length; i++) {
                         if (!/[a-zA-Z0]/.exec(splitBy[i])) {
-                            out += '^\\' + splitBy[i];
+                            out += '\\' + splitBy[i];
                         }
                     }
-                    return new RegExp(out + ']+');
-                }
-                function splitByRegexp(str, regexp) {
-                    var results = [],
-                        current = '',
-                        cutstr = str;
-                    while (cutstr) {
-                        current = regexp.exec(cutstr);
-                        if (current) {
-                            cutstr = cutstr.slice(cutstr.indexOf(current[0]) + current[0].length);
-                            results.push(current);
-                        } else {
-                            break;
-                        }
-                    }
-                    return results;
+                    out += ']+';
+                    return new RegExp(out);
                 }
                 splitter = makeSplitRegexp(byCharacters);
                 return function (value, remainingRules) {
-                    var split = splitByRegexp(value, splitter),
+                    var split = value.split(splitter),
                         current,
                         i;
                     while (remainingRules.length) {
@@ -181,18 +166,12 @@
         },
         ruleStringToRule: function (rule_string) {
             var regexResult, rule, args, ruleFunc;
-            regexResult = rRuleWithArguments.exec(rule_string);
+            regexResult = rValilangRule.exec(rule_string);
             if (regexResult) {
                 rule = regexResult[1];
-                args = regexResult[2];
+                args = regexResult[2] || undefined;
             } else {
-                regexResult = rRuleWithoutArguments.exec(rule_string);
-                if (regexResult) {
-                    rule = regexResult[1];
-                    args = undefined;
-                } else {
-                    this.parseError(undefined, 'Invalid rule: ' + rule_string);
-                }
+                this.parseError(undefined, 'Invalid rule: ' + rule_string);
             }
             ruleFunc = this.rules[rule];
             return ruleFunc === undefined ? undefined : ruleFunc(args);
