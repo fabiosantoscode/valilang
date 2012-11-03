@@ -1,0 +1,12 @@
+[
+    {
+        "name": "Valid guy",
+        "email": "valid@val.com",
+        "recipients": "recipient1@recipients.com, recipient2@recipients.com"
+    },
+    {
+        "name": "ShorterValid",
+        "email": "a@a.a",
+        "recipients": "  recipient2@recipients.com  ,;"
+    }
+]

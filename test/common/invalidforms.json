@@ -1,0 +1,17 @@
+[
+    {
+        "name": "invalid guy",
+        "email": "invalidemail.com",
+        "recipients": "recipient1@recipients.com, recipient2@recipients.com"
+    },
+    {
+        "name": "Invalid too many names",
+        "email": "invalid@val.com",
+        "recipients": "recipient1@recipients.com, recipient2@recipients.com"
+    }, 
+    {
+        "name": "Valid guy",
+        "email": "invalid@val.com",
+        "recipients": "recipient1@recipients.com, recipient2@recipients.com"
+    }
+]
