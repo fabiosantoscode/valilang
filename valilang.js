@@ -40,10 +40,11 @@
                 byCharacters = byCharacters || ' \n';
                 function makeSplitRegexp(splitBy) {
                     var out = '[';
-                    // The slash (\) can be used to escape any regex character.
-                    // Let's be paranoid. Escape everything!
+                    // The slash (\) can be used to escape special characters.
                     for (i = 0; i < splitBy.length; i++) {
-                        out += '^\\' + splitBy[i];
+                        if (!/[a-zA-Z0]/.exec(splitBy[i])) {
+                            out += '^\\' + splitBy[i];
+                        }
                     }
                     return new RegExp(out + ']');
                 }
@@ -158,11 +159,17 @@
             this.rules[rule_name] = rule_func;
         },
         invalidityCallback: function (element) {
-            element.className.replace(/\bvl-valid\b/g, '');
+            if (/\bvl-invalid\b/g.test(element.className)) {
+                return;
+            }
+            element.className = element.className.replace(/\bvl-valid\b/g, '');
             element.className += ' vl-invalid';
         },
         validityCallback: function (element) {
-            element.className.replace(/\bvl-invalid\b/g, '');
+            if (/\bvl-valid\b/g.test(element.className)) {
+                return;
+            }
+            element.className = element.className.replace(/\bvl-invalid\b/g, '');
             element.className += ' vl-valid';
         },
         setInvalidityCallback: function (callback) {
