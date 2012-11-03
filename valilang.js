@@ -35,6 +35,32 @@
                 }
                 return email_validator;
             },
+            min: function (minimum) {
+                return function (val) {
+                    var cmp = typeof (val) === 'string' ? val.length : val;
+                    return cmp >= minimum ? val : null;
+                };
+            },
+            max: function (maximum) {
+                return function (val) {
+                    var cmp = typeof (val) === 'string' ? val.length : val;
+                    return cmp <= maximum ? val : null;
+                };
+            },
+            listmin: function (minimum) {
+                function min_validator(list) {
+                    return list.length >= minimum ? list : null;
+                }
+                min_validator.takesList = true;
+                return min_validator;
+            },
+            listmax: function (maximum) {
+                function max_validator(list) {
+                    return list.length <= maximum ? list : null;
+                }
+                max_validator.takesList = true;
+                return max_validator;
+            },
             split: function (byCharacters) {
                 var i, splitter;
                 byCharacters = byCharacters || ' \n';
@@ -46,27 +72,43 @@
                             out += '^\\' + splitBy[i];
                         }
                     }
-                    return new RegExp(out + ']');
+                    return new RegExp(out + ']+');
                 }
-                function splitByRegexp(str, regexp) {//TODO unused
+                function splitByRegexp(str, regexp) {
                     var results = [],
                         current = '',
                         cutstr = str;
                     while (cutstr) {
                         current = regexp.exec(cutstr);
                         if (current) {
-                            cutstr = cutstr.slice(cutstr.indexOf(current) + current.length);
+                            cutstr = cutstr.slice(cutstr.indexOf(current[0]) + current[0].length);
+                            results.push(current);
                         } else {
                             break;
                         }
                     }
+                    return results;
                 }
                 splitter = makeSplitRegexp(byCharacters);
-                return function (value, nextRules) {
-                    console.log('splitting:');
-                    console.log(value);
-                    console.log('next rules:');
-                    console.log(nextRules);
+                return function (value, remainingRules) {
+                    var split = splitByRegexp(value, splitter),
+                        current,
+                        i;
+                    while (remainingRules.length) {
+                        current = remainingRules.shift();
+                        // This function may take a split list as the argument.
+                        if (current.takesList) {
+                            if (current(split) === null) {
+                                return null;
+                            }
+                        } else {
+                            for (i = 0; i < split.length; i++) {
+                                if (current(split[i]) === null) {
+                                    return null;
+                                }
+                            }
+                        }
+                    }
                 };
             }
         },
@@ -189,16 +231,18 @@
         },
         bind: function (elmName, rules) {
             var elm = document.getElementsByName(elmName)[0],
-                i,
                 that = this,
                 handlerFunc = function () {
-                    for (i = 0; i < rules.length; i++) {
-                        if (!rules[i](elm.value)) {
+                    var remainingRules = [].concat(rules),
+                        current;
+                    while (remainingRules.length) {
+                        current = remainingRules.shift();
+                        if (current(elm.value, remainingRules) === null) {
                             that.isInvalid(elm);
-                        } else {
-                            that.isValid(elm);
+                            return;
                         }
                     }
+                    that.isValid(elm);
                 };
             if (elm === undefined) {
                 console.warn('field named "' + elmName + '" not defined');
