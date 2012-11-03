@@ -7,14 +7,25 @@
  * and/or modify it under the terms of the Do What The Fuck You Want
  * To Public License, Version 2, as published by Sam Hocevar. See
  * http://sam.zoy.org/wtfpl/COPYING for more details. */
-(function (window, document) {
+(function (window) {
     "use strict";
     var rValilangMimeType = /valilang/,
         rWhitespace = /^\s*?$/,
         rValilangRule = /^(\w+)\b-?(.*?)$/,
-        valilang;
+        valilang,
+        document = window && window.document,
+        readyHandler,
+        environment;
+    if (window === undefined) {
+        environment = 'server';
+    } else {
+        environment = 'browser';
+    }
     function listenEvent(elm, eventname, handler) {
         // Listen to events in all browsers
+        if (environment === 'server') {
+            throw 'listenEvent is meant for the browser!';
+        }
         // in oldIE, `this` will not be the current element. It will be the
         // window object instead. Ugh. Fix that by wrapping the handler
         function handlerWrapper(e) {
@@ -32,7 +43,7 @@
         }
     }
     // Valilang object, assigned to the global namespace for API access.
-    valilang = window.valilang = {
+    valilang = {
         // default validation options. Overridden in valilang scripts.
         options: {
             binding: 'keyup'
@@ -93,7 +104,7 @@
                     return new RegExp(out);
                 }
                 splitter = makeSplitRegexp(byCharacters);
-                return function (value, remainingRules) {
+                function split_validator (value, remainingRules) {
                     var split = value.split(splitter),
                         current,
                         i;
@@ -112,7 +123,7 @@
                             }
                         }
                     }
-                };
+                }
             }
         },
         start: function () {
@@ -253,14 +264,22 @@
             }
         }
     };
-    function readyHandler() {
+    if (environment === 'browser') {
+        // Add valilang to the global object.
+        window.valilang = valilang;
+        // Wait for document readiness before we start reading scripts and all.
+        readyHandler = function () {
+            if (document.readyState === 'complete') {
+                valilang.start();
+            }
+        };
         if (document.readyState === 'complete') {
             valilang.start();
+        } else {
+            listenEvent(document, 'readystatechange', readyHandler);
         }
     }
-    if (document.readyState === 'complete') {
-        valilang.start();
-    } else {
-        listenEvent(document, 'readystatechange', readyHandler);
+    if (typeof define === "function" && define.amd) {
+        define("valilang", [], function () { return valilang; });
     }
-}(this, this.document));
+}(window));
