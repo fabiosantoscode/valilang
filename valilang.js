@@ -13,6 +13,24 @@
         rWhitespace = /^\s*?$/,
         rValilangRule = /^(\w+)\b-?(.*?)$/,
         valilang;
+    function listenEvent(elm, eventname, handler) {
+        // Listen to events in all browsers
+        // in oldIE, `this` will not be the current element. It will be the
+        // window object instead. Ugh. Fix that by wrapping the handler
+        function handlerWrapper(e) {
+            // Using Function.call we can override what `this` refers to inside
+            // the func.
+            handler.call(elm, e);
+        }
+        // Again, oldIE doesn't support addEventListener. Use attachEvent.
+        if (elm.addEventListener) {
+            // In standard browsers, still use handlerWrapper, for consistency.
+            elm.addEventListener(eventname, handlerWrapper);
+        } else if (elm.attachEvent) {
+            // Guess what browser also needs the event name changed?
+            elm.attachEvent('on' + eventname, handlerWrapper);
+        }
+    }
     // Valilang object, assigned to the global namespace for API access.
     valilang = window.valilang = {
         // default validation options. Overridden in valilang scripts.
@@ -226,11 +244,7 @@
             if (elm === undefined) {
                 console.warn('field named "' + elmName + '" not defined');
             } else {
-                if (elm.addEventListener) {
-                    elm.addEventListener(this.options.binding, handlerFunc, false);
-                } else if (elm.attachEvent) {
-                    elm.attachEvent('on' + this.options.binding, handlerFunc);
-                }
+                listenEvent(elm, this.options.binding, handlerFunc);
             }
         },
         doneParsing: function () {
@@ -247,10 +261,6 @@
     if (document.readyState === 'complete') {
         valilang.start();
     } else {
-        if (document.addEventListener) {
-            document.addEventListener('readystatechange', readyHandler, false);
-        } else if (document.attachEvent) {
-            document.attachEvent('onreadystatechange');
-        }
+        listenEvent(document, 'readystatechange', readyHandler);
     }
 }(this, this.document));
